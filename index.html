@@ -1,0 +1,168 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>مساعدي</title>
+<link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#0E1F1C;--c:#16302B;--t:#EAF2EF;--m:#8FA8A0;--a:#F2B134;--g:#5FB3A1;--r:#E5806B}
+*{box-sizing:border-box}
+body{margin:0 auto;max-width:480px;background:var(--bg);color:var(--t);font-family:Cairo,sans-serif;padding:16px 16px 96px}
+.c{background:var(--c);border-radius:16px;padding:14px;margin-bottom:12px}
+.m{color:var(--m);font-size:12px}
+.big{font-size:30px;font-weight:700}
+.r{display:flex;justify-content:space-between;padding:6px 0;font-size:14px}
+.bar{height:8px;background:var(--bg);border-radius:4px;margin-top:8px}
+.bar i{display:block;height:8px;border-radius:4px;background:var(--g)}
+.row2{display:flex;gap:10px}.row2>*{flex:1}
+label{display:block}
+input,select{width:100%;padding:11px;border-radius:12px;border:0;background:var(--c);color:var(--t);font:600 16px Cairo,sans-serif;margin:4px 0 10px}
+.c input,.c select{background:var(--bg)}
+button{width:100%;padding:13px;border:0;border-radius:14px;background:var(--a);color:#0E1F1C;font:700 16px Cairo,sans-serif}
+button:focus-visible,input:focus-visible,select:focus-visible,nav a:focus-visible{outline:2px solid var(--a);outline-offset:2px}
+nav{position:fixed;bottom:0;left:0;right:0;max-width:480px;margin:auto;display:flex;background:var(--c);padding:6px 6px calc(6px + env(safe-area-inset-bottom))}
+nav a{flex:1;text-align:center;padding:12px 0;font-size:12px;color:var(--m);border-radius:12px;cursor:pointer}
+nav a.on{background:var(--a);color:#0E1F1C;font-weight:700}
+.del{color:var(--r);cursor:pointer}
+</style>
+</head>
+<body>
+<div id="app"></div>
+<nav id="nav"></nav>
+<script type="module">
+import {initializeApp} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+import {getAuth,onAuthStateChanged,signInWithPopup,GoogleAuthProvider,signOut} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+import {initializeFirestore,persistentLocalCache,doc,onSnapshot,setDoc} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+
+// الصق هنا إعدادات مشروعك من Firebase Console > Project settings > Your apps
+const cfg={apiKey:"YOUR_API_KEY",authDomain:"YOUR_PROJECT.firebaseapp.com",projectId:"YOUR_PROJECT",appId:"YOUR_APP_ID"};
+
+const $=id=>document.getElementById(id);
+const n=x=>Math.round(x).toLocaleString('en');
+const f=x=>n(x)+' ج';
+const row=(a,b)=>`<div class="r"><span>${a}</span><b>${b}</b></div>`;
+const sum=(L,k)=>L.reduce((a,d)=>a+(d[k]||0),0);
+const td=()=>new Date(Date.now()-new Date().getTimezoneOffset()*6e4).toISOString().slice(0,10);
+const ym=td().slice(0,7);
+const DEF={s:{price:25,goal:12000,wd:16,kol:40,fun:25,safe:15,save:20},fx:[],days:{},sp:[]};
+let D=structuredClone(DEF),U=null,ref=null,tab='home',db,auth;
+
+if(cfg.apiKey.startsWith("YOUR")){
+  $('app').innerHTML='<div class="c" style="margin-top:20vh"><b>محتاج إعدادات Firebase</b><p class="m">افتح index.html وحط بيانات مشروعك مكان YOUR_API_KEY.</p></div>';
+}else{
+  const app=initializeApp(cfg);
+  auth=getAuth(app);
+  db=initializeFirestore(app,{localCache:persistentLocalCache()});
+  onAuthStateChanged(auth,u=>{
+    U=u;
+    if(!u){render();return}
+    ref=doc(db,'users',u.uid);
+    onSnapshot(ref,s=>{
+      const x=s.exists()?s.data():{};
+      D={...structuredClone(DEF),...x,s:{...DEF.s,...(x.s||{})}};
+      if(!/INPUT|SELECT/.test(document.activeElement.tagName))render();
+    });
+  });
+}
+const put=()=>setDoc(ref,D);
+
+const bal=w=>sum(Object.values(D.days),w)-D.sp.filter(x=>x.w==w).reduce((a,x)=>a+x.a,0);
+const spent=w=>D.sp.filter(x=>x.w==w&&x.d.startsWith(ym)).reduce((a,x)=>a+x.a,0);
+const perDay=()=>D.fx.reduce((a,x)=>a+x.amt/D.s.wd,0);
+
+function calc(d){
+  const inc=d.o*D.s.price+d.t,ex=d.f+d.w+d.r,net=inc-ex;
+  const fx=Math.min(Math.max(net,0),perDay()),rest=Math.max(net-fx,0),p=D.s;
+  return {inc,ex,net,fx,rest,kol:rest*p.kol/100,fun:rest*p.fun/100,safe:rest*p.safe/100,save:rest*p.save/100};
+}
+function st(){
+  const m=Object.entries(D.days).filter(([k])=>k.startsWith(ym));
+  const net=m.reduce((a,[,d])=>a+d.net,0),worked=m.filter(([,d])=>d.h>0).length;
+  const L=Object.keys(D.days).sort().slice(-30).map(k=>D.days[k]);
+  const H=sum(L,'h'),N=sum(L,'net'),O=sum(L,'o');
+  const rate=H?N/H:70,perOrder=O?N/O:D.s.price;
+  const left=Math.max(D.s.wd-worked,1),need=Math.max(D.s.goal-net,0)/left;
+  return {net,left,need,rate,opH:H?O/H:2.8,hrs:need/rate,ord:need/perOrder};
+}
+const read=()=>{const g=i=>+$(i).value||0;return {o:g('o'),h:g('h'),t:g('t'),f:g('f'),w:g('w'),r:g('r')}};
+
+const wc=(name,w)=>`<div class="c"><div class="m">${name}</div><div class="big" style="font-size:20px">باقي ${f(bal(w))}</div><div class="m">صرفت ${f(spent(w))} الشهر ده</div></div>`;
+
+const V={
+home(){
+  const s=st(),t=D.days[td()],g=Math.min(100,s.net/D.s.goal*100);
+  return `<div class="c"><div class="m">النهارده</div><div class="big">${t?f(t.net)+' صافي':'لسه ما قفلتش اليوم'}</div>
+  <div class="m">${t?t.o+' أوردر · '+t.h+' ساعة':'المطلوب النهارده '+f(s.need)}</div></div>
+  <div class="c"><div class="m">هدف الشهر ${f(D.s.goal)}</div><div class="big">${f(s.net)}</div><div class="bar"><i style="width:${g}%"></i></div></div>
+  <div class="row2">${wc('الكلية','kol')}${wc('الترفيه','fun')}</div>
+  <div class="c"><div class="m">محجوز يومياً للثابتات</div><div class="big">${f(perDay())}</div></div>
+  <button onclick="go('close')">${t?'عدّل يومك':'اقفل يومك'}</button>`;
+},
+close(){
+  const d=D.days[td()]||{};
+  const i=(id,l)=>`<label class="m">${l}<input id="${id}" type="number" inputmode="decimal" value="${d[id]??''}" oninput="pv()"></label>`;
+  return `<div class="row2">${i('o','عدد الأوردرات')}${i('h','ساعات الشغل')}</div>${i('t','بونص وتيبس (ج)')}
+  <div class="m">مصاريف الشغل</div><div class="row2">${i('f','أكل')}${i('w','شرب')}${i('r','تصليح')}</div>
+  <div class="c" id="pr"></div><button onclick="saveDay()">اقفل اليوم</button>`;
+},
+ord(){
+  const s=st(),last=Object.keys(D.days).sort().slice(-7).reverse();
+  return `<div class="c"><div class="m">هدف الشهر ${f(D.s.goal)} · موزع على ${D.s.wd} يوم شغل</div><div class="big">${f(s.net)}</div>
+  <div class="bar"><i style="width:${Math.min(100,s.net/D.s.goal*100)}%"></i></div></div>
+  <div class="c"><div class="m">المطلوب منك</div>${row('أيام شغل باقية',s.left)}${row('المطلوب في اليوم',f(s.need))}
+  ${row('ساعات في اليوم',s.hrs.toFixed(1))}${row('أوردرات في اليوم',Math.ceil(s.ord))}
+  ${row('أوردر في الساعة (متوسطك)',s.opH.toFixed(1))}${row('دخل الساعة',f(s.rate))}</div>
+  <div class="c"><div class="m">آخر الأيام</div>${last.map(k=>row(k.slice(5),f(D.days[k].net))).join('')||'<div class="m">لسه مفيش أيام مقفولة</div>'}</div>`;
+},
+money(){
+  const L={kol:'الكلية',fun:'الترفيه',safe:'الأمان',save:'الادخار'};
+  return `<div class="c"><div class="m">الأرصدة</div>${Object.keys(L).map(w=>row(L[w],f(bal(w)))).join('')}</div>
+  <div class="c"><div class="m">سجّل مصروف</div><select id="sw"><option value="kol">الكلية</option><option value="fun">الترفيه</option></select>
+  <input id="sa" type="number" inputmode="decimal" placeholder="المبلغ"><input id="sn" placeholder="على إيه"><button onclick="addSp()">سجّل</button></div>
+  <div class="c"><div class="m">آخر المصاريف</div>${D.sp.slice(-5).reverse().map(x=>row(x.n||L[x.w],f(x.a))).join('')||'<div class="m">لسه مفيش</div>'}</div>
+  <div class="c"><div class="m">الثابتات والالتزامات (شهرياً)</div>
+  ${D.fx.map((x,i)=>`<div class="r"><span>${x.n}: ${f(x.amt)} (${f(x.amt/D.s.wd)} يومياً)</span><a class="del" onclick="delFx(${i})">حذف</a></div>`).join('')}
+  <input id="fn" placeholder="الاسم (قسط، دين، اشتراك)"><input id="fa" type="number" inputmode="decimal" placeholder="المبلغ الشهري"><button onclick="addFx()">ضيف</button></div>`;
+},
+set(){
+  const s=D.s,i=(id,l)=>`<label class="m">${l}<input id="${id}" type="number" inputmode="decimal" value="${s[id]}"></label>`;
+  return `${i('price','سعر الأوردر (ج)')}${i('goal','هدف الشهر (ج)')}${i('wd','عدد أيام الشغل في الشهر')}
+  <div class="m">نسب توزيع الباقي (المجموع 100)</div><div class="row2">${i('kol','كلية')}${i('fun','ترفيه')}</div><div class="row2">${i('safe','أمان')}${i('save','ادخار')}</div>
+  <button onclick="saveSet()">احفظ</button><p></p><button onclick="out()" style="background:var(--c);color:var(--t)">خروج</button>`;
+}};
+
+function render(){
+  if(!ref||!U){
+    if(cfg.apiKey.startsWith("YOUR"))return;
+    $('nav').innerHTML='';
+    $('app').innerHTML='<div class="c" style="margin-top:28vh;text-align:center"><div class="big">مساعدي</div><p class="m">شغلك وفلوسك في مكان واحد</p><button onclick="login()">دخول بحساب جوجل</button></div>';
+    return;
+  }
+  $('nav').innerHTML=[['home','الرئيسية'],['close','قفل اليوم'],['ord','الطلبات'],['money','المال'],['set','الإعدادات']]
+    .map(([k,v])=>`<a role="button" tabindex="0" class="${k==tab?'on':''}" onclick="go('${k}')">${v}</a>`).join('');
+  $('app').innerHTML=V[tab]();
+  if(tab=='close')pv();
+}
+window.go=t=>{tab=t;render()};
+window.login=()=>signInWithPopup(auth,new GoogleAuthProvider());
+window.out=()=>{ref=null;signOut(auth)};
+window.pv=()=>{
+  const x=calc(read());
+  $('pr').innerHTML=row('الدخل',f(x.inc))+row('مصاريف الشغل','- '+f(x.ex))+row('الصافي',f(x.net))+row('الثابتات','- '+f(x.fx))
+    +row('الباقي للتوزيع',f(x.rest))+row('الكلية',f(x.kol))+row('الترفيه',f(x.fun))+row('الأمان',f(x.safe))+row('الادخار',f(x.save));
+};
+window.saveDay=()=>{const v=read();D.days[td()]={...v,...calc(v)};put();go('home')};
+window.addSp=()=>{const a=+$('sa').value;if(!a)return;D.sp.push({w:$('sw').value,a,n:$('sn').value,d:td()});put();render()};
+window.addFx=()=>{const a=+$('fa').value,nm=$('fn').value.trim();if(!a||!nm)return;D.fx.push({n:nm,amt:a});put();render()};
+window.delFx=i=>{D.fx.splice(i,1);put();render()};
+window.saveSet=()=>{
+  const k=['price','goal','wd','kol','fun','safe','save'],v={};
+  k.forEach(x=>v[x]=+$(x).value||0);
+  if(v.kol+v.fun+v.safe+v.save!=100){alert('مجموع النسب لازم يبقى 100');return}
+  v.wd=Math.max(v.wd,1);D.s=v;put();go('home');
+};
+render();
+</script>
+</body>
+</html>
