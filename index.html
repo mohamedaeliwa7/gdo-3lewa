@@ -3,7 +3,12 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<title>مساعدي</title>
+<title>gdo 3lewa</title>
+<link rel="icon" type="image/svg+xml" href="favicon.svg">
+<link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
+<link rel="manifest" href="manifest.webmanifest">
+<meta name="theme-color" content="#0E1F1C">
+<link rel="apple-touch-icon" href="icon-192.png">
 <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700&display=swap" rel="stylesheet">
 <style>
 :root{--bg:#0E1F1C;--c:#16302B;--t:#EAF2EF;--m:#8FA8A0;--a:#F2B134;--g:#5FB3A1;--r:#E5806B}
@@ -46,7 +51,7 @@ nav a{flex:none;text-align:right;padding:12px 14px;font-size:15px}
 </style>
 </head>
 <body>
-<header id="hd"><h1>مساعدي</h1><button class="s" onclick="go('set')">الإعدادات</button></header>
+<header id="hd"><h1 style="display:flex;align-items:center;gap:8px"><svg width="30" height="30" viewBox="0 0 64 64" aria-hidden="true"><rect width="64" height="64" rx="14" fill="#16302B"/><path d="M45.79 20.43A18 18 0 1 0 49.93 33.57L35 33.57" fill="none" stroke="#F2B134" stroke-width="9" stroke-linecap="round" stroke-linejoin="round"/><circle cx="50" cy="50" r="4.5" fill="#5FB3A1"/></svg>gdo 3lewa</h1><button class="s" onclick="go('set')">الإعدادات</button></header>
 <main id="app"></main>
 <nav id="nav"></nav>
 <script type="module">
@@ -69,8 +74,8 @@ const hm=t=>{const[a,b]=t.split(':');return +a+b/60};
 const DN=['أحد','اثنين','ثلاثاء','أربع','خميس','جمعة','سبت'],ORD=[1,2,3,4,5,6,0];
 const KC={work:'#B87A2E',lec:'#4A78B8',sec:'#3F8F68',study:'#7B66B5',fun:'#B8587F'},KN={work:'شغل',lec:'محاضرة',sec:'سكشن',study:'مذاكرة',fun:'ترفيه'};
 const COL=['#F2B134','#5FB3A1','#7FA6E8','#B79CE8','#8FA8A0'];
-const DEF={s:{price:25,goal:12000,wd:16,kol:40,fun:25,safe:15,save:20},fx:[],days:{},sp:[],sch:[],hb:[],hd:{},hx:{},sk:{},nt:[]};
-let D=structuredClone(DEF),U=null,ref=null,tab='home',db,auth,nf='الكل',nd='all',ndp='',selM=ym,wo=0;
+const DEF={s:{price:25,goal:12000,wd:16,kol:40,fun:25,safe:15,save:20},fx:[],days:{},sp:[],sch:[],hb:[],hd:{},hn:{},sk:{},nt:[]};
+let D=structuredClone(DEF),U=null,ref=null,tab='home',db,auth,nf='الكل',nd='all',ndp='',selM=ym,wo=0,eb=null,cdt='';
 
 if(cfg.apiKey.startsWith("YOUR")){
   $('app').innerHTML='<div class="c"><b>محتاج إعدادات Firebase</b></div>';
@@ -95,11 +100,21 @@ const put=()=>setDoc(ref,D);
 
 const bal=w=>sum(Object.values(D.days),w)-D.sp.filter(x=>x.w==w).reduce((a,x)=>a+x.a,0);
 const spent=w=>D.sp.filter(x=>x.w==w&&x.d.startsWith(ym)).reduce((a,x)=>a+x.a,0);
-const perDay=()=>D.fx.reduce((a,x)=>a+x.amt/D.s.wd,0);
+const perDay=()=>D.fx.reduce((a,x)=>a+fxd(x),0);
 const mDays=m=>Object.entries(D.days).filter(([k])=>k.startsWith(m)).map(e=>e[1]);
 const dueN=()=>D.nt.filter(x=>!x.ok&&x.d&&(x.d<td()||(x.d==td()&&(!x.tm||x.tm<=nowHM()))));
 
-const isDone=(h,d)=>{const a=h.au?(D.hx[d]||[]):(D.hd[d]||[]);return h.au?!a.includes(h.i):a.includes(h.i)};
+const hst=(h,d)=>(D.hd[d]||[]).includes(h.i)?1:(D.hn[d]||[]).includes(h.i)?2:0;
+const isDone=(h,d)=>hst(h,d)==1;
+const SY=['○','✓','✗'],SC=['','color:var(--g)','color:var(--r)'];
+const streak=h=>{let c=0,k=hst(h,addD(0))?0:1;for(;k<400&&hst(h,addD(-k))==1;k++)c++;return c};
+const pct=h=>{const e=+td().slice(8);let c=0;for(let k=0;k<e;k++)if(hst(h,addD(-k))==1)c++;return Math.round(c/e*100)};
+const dots=h=>Array.from({length:14},(_,k)=>{const s=hst(h,addD(k-13));return `<span style="${SC[s]}">${['·','●','✗'][s]}</span>`}).join(' ');
+const dlv=x=>Math.round((new Date(x.dl)-new Date(td()))/864e5);
+const fxd=x=>x.dl?x.rem/Math.max(1,Math.round((new Date(x.dl)-new Date(td()))/864e5/30*D.s.wd)):x.amt/D.s.wd;
+const planH=(dt)=>{const wd=new Date(dt+'T12:00:00').getDay();return Math.round(blocksOn(dt,wd).filter(x=>x.k=='work'&&!(D.sk[dt]||[]).includes(x.id)).reduce((a,x)=>a+hm(x.e)-hm(x.s),0)*10)/10};
+const fd=dt=>dt.slice(8)+'/'+dt.slice(5,7);
+const fdw=dt=>DN[new Date(dt+'T12:00:00').getDay()]+' '+fd(dt);
 const wkDates=()=>{const m=(new Date().getDay()+6)%7;return [0,1,2,3,4,5,6].map(k=>addD(-m+7*wo+k))};
 const blocksOn=(dt,wd)=>D.sch.map((x,i)=>({...x,i})).filter(x=>x.dt?x.dt==dt:x.d==wd);
 function calc(d){
@@ -144,18 +159,19 @@ const V={
 home(){
   const s=st(),t=D.days[td()],g=Math.min(100,s.net/D.s.goal*100),dd=D.hb.filter(h=>isDone(h,td())).length,hb=D.hb.length;
   const today=blocksOn(td(),new Date().getDay()).filter(x=>!(D.sk[td()]||[]).includes(x.id)).sort((a,b)=>a.s>b.s?1:-1);
-  return `<div class="g">${dueN().map(x=>`<div class="c w" style="border:1px solid var(--r)"><div class="m">تذكير</div>${esc(x.x)}</div>`).join('')}
-  <div class="c"><div class="m">النهارده</div><div class="big">${t?f(t.net)+' صافي':'لسه ما قفلتش اليوم'}</div><div class="m">${t?t.o+' أوردر · '+t.h+' ساعة':'المطلوب النهارده '+f(s.need)}</div></div>
+  return `<div class="g">${D.fx.filter(x=>x.dl&&x.rem>0&&dlv(x)<=7).map(x=>`<div class="c w" style="border:1px solid var(--r)"><div class="m">فلوس مستعجلة</div>${esc(x.n)}: باقي ${f(x.rem)} خلال ${Math.max(dlv(x),0)} يوم (${f(fxd(x))} يومياً)</div>`).join('')}${dueN().map(x=>`<div class="c w" style="border:1px solid var(--r)"><div class="m">تذكير</div>${esc(x.x)}</div>`).join('')}
+  <div class="c"><div class="m">النهارده ${fdw(td())}</div><div class="big">${t?f(t.net)+' صافي':'لسه ما قفلتش اليوم'}</div><div class="m">${t?t.o+' أوردر · '+t.h+' ساعة':'المطلوب النهارده '+f(s.need)}</div></div>
   <div class="c"><div class="m">هدف الشهر ${f(D.s.goal)}</div><div class="big">${f(s.net)}</div><div class="bar"><i style="width:${g}%"></i></div></div>
   ${wc('الكلية','kol')}${wc('الترفيه','fun')}
   <div class="c"><div class="m">جدول النهارده</div>${today.map(x=>row(esc(x.n),x.s+' - '+x.e)).join('')||'<div class="m">فاضي</div>'}</div>
-  <div class="c"><div class="m">العادات: ${dd} من ${hb}</div>${D.hb.map(h=>`<div class="r"><a role="button" tabindex="0" style="cursor:pointer;${isDone(h,td())?'color:var(--g)':''}" onclick="tg(${h.i})">${isDone(h,td())?'✓':'○'} ${esc(h.n)}${h.au?' (دايمة)':''}</a></div>`).join('')||'<div class="m">ضيف عاداتك من تبويب الجدول</div>'}<div class="bar"><i style="width:${hb?dd/hb*100:0}%"></i></div><div class="m" style="margin-top:8px">محجوز للثابتات يومياً ${f(perDay())}</div></div>
+  <div class="c"><div class="m">العادات: ${dd} من ${hb}</div>${D.hb.map(h=>{const s=hst(h,td());return `<div class="r"><a role="button" tabindex="0" style="cursor:pointer;${SC[s]}" onclick="tg(${h.i})">${SY[s]} ${esc(h.n)}</a><span class="m">سلسلة ${streak(h)} · ${pct(h)}%</span></div>`}).join('')||'<div class="m">ضيف عاداتك من تبويب الجدول</div>'}<div class="bar"><i style="width:${hb?dd/hb*100:0}%"></i></div><div class="m" style="margin-top:8px">محجوز للثابتات يومياً ${f(perDay())}</div></div>
   <button class="w" onclick="go('close')">${t?'عدّل يومك':'اقفل يومك'}</button></div>`;
 },
 close(){
-  const d=D.days[td()]||{};
-  const i=(id,l)=>`<label class="m">${l}<input id="${id}" type="number" inputmode="decimal" value="${d[id]??''}" oninput="pv()"></label>`;
-  return `<div class="f"><div class="row2">${i('o','عدد الأوردرات')}${i('h','ساعات الشغل')}</div>${i('t','بونص وتيبس (ج)')}
+  const dt=cdt||td(),d=D.days[dt]||{},PL=planH(dt);
+  const i=(id,l)=>`<label class="m">${l}<input id="${id}" type="number" inputmode="decimal" value="${d[id]??(id=='h'&&PL?PL:'')}" oninput="pv()"></label>`;
+  return `<div class="f"><label class="m">اليوم: ${fdw(dt)}<input id="cd" type="date" value="${dt}" max="${td()}" onchange="setCd(this.value)"></label>
+  <div class="row2">${i('o','عدد الأوردرات')}${i('h','ساعات الشغل')}</div><div class="m" style="margin-bottom:8px">${PL?'حسب جدولك: '+PL+' ساعة شغل':''}</div>${i('t','بونص وتيبس (ج)')}
   <div class="m">مصاريف الشغل</div><div class="row2">${i('f','أكل')}${i('w','شرب')}${i('r','تصليح')}</div>
   <div class="c" id="pr"></div><button onclick="saveDay()">اقفل اليوم</button></div>`;
 },
@@ -163,7 +179,7 @@ ord(){
   const s=st(),last=Object.keys(D.days).sort().slice(-7).reverse();
   return `<div class="g"><div class="c"><div class="m">هدف الشهر ${f(D.s.goal)} · موزع على ${D.s.wd} يوم شغل</div><div class="big">${f(s.net)}</div><div class="bar"><i style="width:${Math.min(100,s.net/D.s.goal*100)}%"></i></div></div>
   <div class="c"><div class="m">المطلوب منك</div>${row('أيام شغل باقية',s.left)}${row('المطلوب في اليوم',f(s.need))}${row('ساعات في اليوم',s.hrs.toFixed(1))}${row('أوردرات في اليوم',Math.ceil(s.ord))}${row('أوردر في الساعة (متوسطك)',s.opH.toFixed(1))}${row('دخل الساعة',f(s.rate))}</div>
-  <div class="c w"><div class="m">آخر الأيام</div>${last.map(k=>row(k.slice(5),f(D.days[k].net))).join('')||'<div class="m">لسه مفيش أيام مقفولة</div>'}</div>${sumry(selM)}</div>`;
+  <div class="c w"><div class="m">آخر الأيام</div>${last.map(k=>row(fdw(k),f(D.days[k].net))).join('')||'<div class="m">لسه مفيش أيام مقفولة</div>'}</div>${sumry(selM)}</div>`;
 },
 money(){
   const L={kol:'الكلية',fun:'الترفيه',safe:'الأمان',save:'الادخار'},M=mDays(ym);
@@ -171,16 +187,19 @@ money(){
   <div class="c"><div class="m">الأرصدة</div>${Object.keys(L).map(w=>row(L[w],f(bal(w)))).join('')}</div>
   <div class="c"><div class="m">سجّل مصروف</div><select id="sw"><option value="kol">الكلية</option><option value="fun">الترفيه</option></select><input id="sa" type="number" inputmode="decimal" placeholder="المبلغ"><input id="sn" placeholder="على إيه"><button onclick="addSp()">سجّل</button></div>
   <div class="c"><div class="m">آخر المصاريف</div>${D.sp.slice(-5).reverse().map(x=>row(esc(x.n||L[x.w]),f(x.a))).join('')||'<div class="m">لسه مفيش</div>'}</div>
-  <div class="c"><div class="m">الثابتات والالتزامات (شهرياً)</div>${D.fx.map((x,i)=>`<div class="r"><span>${esc(x.n)}: ${f(x.amt)} (${f(x.amt/D.s.wd)} يومياً)</span><a class="del" onclick="delFx(${i})">حذف</a></div>`).join('')}<input id="fn" placeholder="الاسم (قسط، دين، اشتراك)"><input id="fa" type="number" inputmode="decimal" placeholder="المبلغ الشهري"><button onclick="addFx()">ضيف</button></div></div>`;
+  <div class="c"><div class="m">الثابتات والفلوس المستعجلة</div>${D.fx.map((x,i)=>({x,i})).sort((a,b)=>(a.x.dl||'9')>(b.x.dl||'9')?1:-1).map(({x,i})=>{const dd=x.dl?dlv(x):0,hot=x.dl&&x.rem>0&&dd<=7;return `<div class="r" style="${hot?'color:var(--r)':''}"><span>${esc(x.n)}: ${x.dl?(x.rem>0?'باقي '+f(x.rem)+' لحد '+fdw(x.dl)+' (باقي '+Math.max(dd,0)+' يوم)':'اتسدد ✓'):f(x.amt)+' شهرياً'}${x.rem>0||!x.dl?' · '+f(fxd(x))+' يومياً':''}</span><span>${x.dl&&x.rem>0?`<a class="del" style="color:var(--g)" onclick="payFx(${i})">سدّدت</a> `:''}<a class="del" onclick="delFx(${i})">حذف</a></span></div>`}).join('')}<select id="ft"><option value="m">ثابت كل شهر (قسط، اشتراك)</option><option value="d">مبلغ مستعجل لازم يتجمع قبل ديدلاين</option></select><input id="fn" placeholder="الاسم"><input id="fa" type="number" inputmode="decimal" placeholder="المبلغ (الشهري، أو المطلوب كله لو ديدلاين)"><input id="fl" type="date" aria-label="الديدلاين"><button onclick="addFx()">ضيف</button></div></div>`;
 },
 sch(){
-  const hs=7,he=24,H=26,ds=wkDates(),t0=td();
-  const cols=ds.map((dt,k)=>{const wd=ORD[k];return `<div style="flex:1;min-width:0"><div class="m" style="text-align:center;${dt==t0?'color:var(--a);font-weight:700':''}">${DN[wd]} ${dt.slice(8)}</div><div style="position:relative;height:${(he-hs)*H}px;background:var(--c);border-radius:6px">${blocksOn(dt,wd).filter(x=>!(D.sk[dt]||[]).includes(x.id)).map(x=>{const a=Math.max(hm(x.s),hs),e=Math.min(hm(x.e),he);return `<div style="position:absolute;left:1px;right:1px;top:${(a-hs)*H}px;height:${Math.max((e-a)*H-2,10)}px;background:${KC[x.k]};border-radius:5px;font-size:10px;padding:2px;overflow:hidden;line-height:1.2">${esc(x.n)}</div>`}).join('')}</div></div>`}).join('');
-  const list=ds.map((dt,k)=>blocksOn(dt,ORD[k]).sort((a,b)=>a.s>b.s?1:-1).map(x=>{const sk=(D.sk[dt]||[]).includes(x.id);return `<div class="r" style="${sk?'opacity:.5':''}"><span>${DN[ORD[k]]} ${dt.slice(8)} · ${esc(x.n)} · ${x.s}-${x.e}${x.dt?' (مرة واحدة)':''}</span><span>${x.dt?`<a class="del" onclick="delBlk(${x.i})">حذف</a>`:`<a class="del" style="color:var(--m)" onclick="skBlk('${dt}',${x.id})">${sk?'رجّع':'تخطي'}</a> <a class="del" onclick="delBlk(${x.i})">حذف نهائي</a>`}</span></div>`}).join('')).join('');
-  return `<div class="g"><div class="c w"><div class="row2" style="margin-bottom:10px"><button class="s" onclick="setWo(-1)">الأسبوع اللي فات</button><button class="s" onclick="setWo(0)">الأسبوع ده</button><button class="s" onclick="setWo(1)">الجاي</button></div><div class="cols">${cols}</div><div class="m" style="margin-top:8px">${Object.keys(KN).map(k=>`<span class="dot" style="background:${KC[k]}"></span>${KN[k]}`).join(' ')}</div></div>
-  <div class="c"><div class="m">ضيف بلوك (الجدول بيتكرر كل أسبوع لوحده)</div><select id="br"><option value="0">كل أسبوع</option><option value="1">مرة واحدة بس</option></select><div class="row2"><select id="bd">${ORD.map(d=>`<option value="${d}">${DN[d]}</option>`).join('')}</select><input id="bdt" type="date" aria-label="التاريخ لو مرة واحدة"></div><input id="bn" placeholder="الاسم (Math 3، طلبات، كورة)"><div class="row2"><label class="m">من<input id="bs" type="time" value="09:00"></label><label class="m">إلى<input id="be" type="time" value="12:00"></label></div><select id="bk">${Object.keys(KN).map(k=>`<option value="${k}">${KN[k]}</option>`).join('')}</select><button onclick="addBlk()">ضيف</button></div>
+  const hs=7,he=24,H=26,ds=wkDates(),t0=td(),E=eb!=null&&D.sch[eb]?D.sch[eb]:{};
+  const vis=(dt,wd)=>blocksOn(dt,wd).filter(x=>!(D.sk[dt]||[]).includes(x.id));
+  const ov=(a,b)=>hm(a.s)<hm(b.e)&&hm(b.s)<hm(a.e);
+  const cols=ds.map((dt,k)=>{const wd=ORD[k];return `<div style="flex:1;min-width:0"><div class="m" style="text-align:center;${dt==t0?'color:var(--a);font-weight:700':''}">${DN[wd]}<br>${fd(dt)}</div><div style="position:relative;height:${(he-hs)*H}px;background:var(--c);border-radius:6px">${vis(dt,wd).map(x=>{const a=Math.max(hm(x.s),hs),e=Math.min(hm(x.e),he);return `<div style="position:absolute;left:1px;right:1px;top:${(a-hs)*H}px;height:${Math.max((e-a)*H-2,10)}px;background:${KC[x.k]};border-radius:5px;font-size:10px;padding:2px;overflow:hidden;line-height:1.2">${esc(x.n)}</div>`}).join('')}</div></div>`}).join('');
+  const list=ds.map((dt,k)=>{const A=vis(dt,ORD[k]);return blocksOn(dt,ORD[k]).sort((a,b)=>a.s>b.s?1:-1).map(x=>{const sk=(D.sk[dt]||[]).includes(x.id),cf=!sk&&A.some(y=>y.id!=x.id&&ov(x,y)),dd=[x.pl,x.dr,x.nn].filter(Boolean);
+    return `<div style="${sk?'opacity:.5':''}"><div class="r"><span>${DN[ORD[k]]} ${fd(dt)} · ${esc(x.n)} · ${x.s}-${x.e}${x.dt?' (مرة واحدة)':''}${cf?' <b style="color:var(--r)">تداخل</b>':''}</span><span><a class="del" style="color:var(--m)" onclick="edBlk(${x.i})">تعديل</a> ${x.dt?'':`<a class="del" style="color:var(--m)" onclick="skBlk('${dt}',${x.id})">${sk?'رجّع':'تخطي'}</a> `}<a class="del" onclick="delBlk(${x.i})">حذف</a></span></div>${dd.length?`<div class="m">${dd.map(esc).join(' · ')}</div>`:''}</div>`}).join('')}).join('');
+  return `<div class="g"><div class="c w"><div class="row2" style="margin-bottom:10px"><button class="s" onclick="setWo(-1)">الأسبوع اللي فات</button><button class="s" onclick="setWo(0)">الأسبوع ده</button><button class="s" onclick="setWo(1)">الجاي</button></div><div class="m" style="text-align:center;margin-bottom:8px">من ${fdw(ds[0])} إلى ${fdw(ds[6])}</div><div class="cols">${cols}</div><div class="m" style="margin-top:8px">${Object.keys(KN).map(k=>`<span class="dot" style="background:${KC[k]}"></span>${KN[k]}`).join(' ')}</div></div>
+  <div class="c" id="bf"><div class="m">${eb!=null?'تعديل البلوك':'ضيف بلوك (الجدول بيتكرر كل أسبوع لوحده)'}</div><select id="br"><option value="0">كل أسبوع</option><option value="1" ${E.dt?'selected':''}>مرة واحدة بس</option></select><div class="row2"><select id="bd">${ORD.map(d=>`<option value="${d}" ${E.d==d?'selected':''}>${DN[d]}</option>`).join('')}</select><input id="bdt" type="date" value="${E.dt||''}" aria-label="التاريخ لو مرة واحدة"></div><input id="bn" placeholder="الاسم (Math 3، طلبات، كورة)" value="${esc(E.n||'')}"><div class="row2"><label class="m">من<input id="bs" type="time" value="${E.s||'09:00'}"></label><label class="m">إلى<input id="be" type="time" value="${E.e||'12:00'}"></label></div><select id="bk">${Object.keys(KN).map(k=>`<option value="${k}" ${E.k==k?'selected':''}>${KN[k]}</option>`).join('')}</select><input id="bp" placeholder="المكان (اختياري)" value="${esc(E.pl||'')}"><input id="bo" placeholder="الدكتور أو الشخص (اختياري)" value="${esc(E.dr||'')}"><input id="bt" placeholder="ملاحظة (اختياري)" value="${esc(E.nn||'')}"><button onclick="addBlk()">${eb!=null?'احفظ التعديل':'ضيف'}</button>${eb!=null?'<p></p><button class="s" onclick="edBlk(null)">إلغاء التعديل</button>':''}</div>
   <div class="c"><div class="m">بلوكات الأسبوع المعروض (تخطي = يتشال الأسبوع ده بس)</div>${list||'<div class="m">لسه مفيش</div>'}</div>
-  <div class="c w"><div class="m">العادات (بتتسجل من الرئيسية كمان)</div>${D.hb.map(h=>`<div class="r"><a role="button" tabindex="0" style="cursor:pointer;${isDone(h,t0)?'color:var(--g)':''}" onclick="tg(${h.i})">${isDone(h,t0)?'✓':'○'} ${esc(h.n)}${h.au?' (دايمة)':''}</a><a class="del" onclick="dh(${h.i})">حذف</a></div>`).join('')}<select id="ha"><option value="0">أسجلها كل يوم</option><option value="1">دايمة: تتحسب تلقائي وأنا بس أشيلها لو فاتتني</option></select><input id="hn" placeholder="عادة جديدة (مذاكرة ساعة)"><button onclick="addHb()">ضيف عادة</button></div></div>`;
+  <div class="c w"><div class="m">العادات: دوسة ✓ عملتها، دوستين ✗ ما عملتهاش</div>${D.hb.map(h=>{const s=hst(h,t0);return `<div style="padding:4px 0"><div class="r"><a role="button" tabindex="0" style="cursor:pointer;${SC[s]}" onclick="tg(${h.i})">${SY[s]} ${esc(h.n)}</a><a class="del" onclick="dh(${h.i})">حذف</a></div><div class="m">آخر 14 يوم: ${dots(h)} · سلسلة ${streak(h)} · الشهر ${pct(h)}%</div></div>`}).join('')}<input id="hn" placeholder="عادة جديدة (مذاكرة ساعة)"><button onclick="addHb()">ضيف عادة</button></div></div>`;
 },
 nt(){
   const K=['عادي','وصفة','تمرين','عاجل'];
@@ -193,13 +212,13 @@ nt(){
   return `<div class="g"><div class="c w"><div class="m">النوع</div>${['الكل',...K].map(k=>chip(k,nf==k,`setNf('${k}')`)).join('')}
   <div class="m">اليوم</div>${[['all','الكل'],['today','النهارده'],['tom','بكرة'],['pick','يوم معين']].map(([k,v])=>chip(v,nd==k,`setNd('${k}')`)).join('')}${nd=='pick'?`<input type="date" value="${ndp}" onchange="setNp(this.value)">`:''}</div>
   <div class="c w"><div class="m">نوتة جديدة</div><input id="nx" placeholder="اكتب النوتة"><div class="row2"><select id="nk">${opts(K,'عادي')}</select><select id="nw"><option value="">بدون تاريخ</option><option value="today">النهارده</option><option value="tom">بكرة</option><option value="pick">يوم معين</option></select></div><div class="row2"><input id="nda" type="date"><input id="ntm" type="time"></div><div class="m">النوتة العاجلة من غير تاريخ بتتحط بكرة لوحدها</div><button onclick="addNt()">احفظ</button><p></p><button class="s" onclick="window.Notification&&Notification.requestPermission()">فعّل إشعارات المتصفح</button></div>
-  ${L.map(x=>`<div class="c"><div style="${x.ok?'text-decoration:line-through;opacity:.6':''}">${esc(x.x)}</div><div class="m" style="${!x.ok&&x.d&&x.d<td()?'color:var(--r)':''}">${x.k} · ${x.d||'بدون تاريخ'}${x.tm?' · '+x.tm:''}</div><div class="row2" style="margin-top:8px"><button class="s" onclick="okNt(${x.i})">${x.ok?'رجّعها':'خلصت'}</button><button class="s" onclick="delNt(${x.i})">امسح</button></div></div>`).join('')||'<div class="c w m">مفيش نوتس بالفلتر ده</div>'}</div>`;
+  ${L.map(x=>`<div class="c"><div style="${x.ok?'text-decoration:line-through;opacity:.6':''}">${esc(x.x)}</div><div class="m" style="${!x.ok&&x.d&&x.d<td()?'color:var(--r)':''}">${x.k} · ${x.d?fdw(x.d):'بدون تاريخ'}${x.tm?' · '+x.tm:''}</div><div class="row2" style="margin-top:8px"><button class="s" onclick="okNt(${x.i})">${x.ok?'رجّعها':'خلصت'}</button><button class="s" onclick="delNt(${x.i})">امسح</button></div></div>`).join('')||'<div class="c w m">مفيش نوتس بالفلتر ده</div>'}</div>`;
 },
 set(){
   const s=D.s,i=(id,l)=>`<label class="m">${l}<input id="${id}" type="number" inputmode="decimal" value="${s[id]}"></label>`;
   return `<div class="f">${i('price','سعر الأوردر (ج)')}${i('goal','هدف الشهر (ج)')}${i('wd','عدد أيام الشغل في الشهر')}
   <div class="m">نسب توزيع الباقي (المجموع 100)</div><div class="row2">${i('kol','كلية')}${i('fun','ترفيه')}</div><div class="row2">${i('safe','أمان')}${i('save','ادخار')}</div>
-  <button onclick="saveSet()">احفظ</button><p></p><button onclick="out()" style="background:var(--c);color:var(--t)">خروج</button></div>`;
+  <button onclick="saveSet()">احفظ</button><p></p><button class="s" onclick="inst()">ثبّت التطبيق على الموبايل</button><p></p><button onclick="out()" style="background:var(--c);color:var(--t)">خروج</button></div>`;
 }};
 
 const TABS=[['home','الرئيسية'],['close','قفل اليوم'],['ord','الطلبات'],['money','المال'],['sch','الجدول'],['nt','النوتس']];
@@ -207,7 +226,7 @@ function render(){
   $('hd').style.display=ref?'':'none';
   if(!ref||!U){
     $('nav').innerHTML='';
-    $('app').innerHTML='<div class="c" style="margin-top:25vh;text-align:center"><div class="big">مساعدي</div><p class="m">شغلك وفلوسك ومواعيدك في مكان واحد</p><button onclick="login()">دخول بحساب جوجل</button></div>';
+    $('app').innerHTML='<div class="c" style="margin-top:25vh;text-align:center"><div style="display:flex;justify-content:center;margin-bottom:8px"><svg width="64" height="64" viewBox="0 0 64 64" aria-hidden="true"><rect width="64" height="64" rx="14" fill="#16302B"/><path d="M45.79 20.43A18 18 0 1 0 49.93 33.57L35 33.57" fill="none" stroke="#F2B134" stroke-width="9" stroke-linecap="round" stroke-linejoin="round"/><circle cx="50" cy="50" r="4.5" fill="#5FB3A1"/></svg></div><div class="big">gdo 3lewa</div><p class="m">شغلك وفلوسك ومواعيدك في مكان واحد</p><button onclick="login()">دخول بحساب جوجل</button></div>';
     return;
   }
   $('nav').innerHTML=TABS.map(([k,v])=>`<a role="button" tabindex="0" class="${k==tab?'on':''}" onclick="go('${k}')">${v}</a>`).join('');
@@ -223,19 +242,28 @@ W.pv=()=>{
   const x=calc(read());
   $('pr').innerHTML=row('الدخل',f(x.inc))+row('مصاريف الشغل','- '+f(x.ex))+row('الصافي',f(x.net))+row('الثابتات','- '+f(x.fx))+row('الباقي للتوزيع',f(x.rest))+row('الكلية',f(x.kol))+row('الترفيه',f(x.fun))+row('الأمان',f(x.safe))+row('الادخار',f(x.save));
 };
-W.saveDay=()=>{const v=read();D.days[td()]={...v,...calc(v)};put();go('home')};
+W.saveDay=()=>{const v=read(),dt=cdt||td();D.days[dt]={...v,...calc(v)};cdt='';put();go('home')};
 W.addSp=()=>{const a=+$('sa').value;if(!a)return;D.sp.push({w:$('sw').value,a,n:$('sn').value,d:td()});put();render()};
-W.addFx=()=>{const a=+$('fa').value,nm=$('fn').value.trim();if(!a||!nm)return;D.fx.push({n:nm,amt:a});put();render()};
 W.delFx=i=>{D.fx.splice(i,1);put();render()};
 W.addBlk=()=>{const nm=$('bn').value.trim(),s=$('bs').value,e=$('be').value,once=$('br').value=='1',dt=$('bdt').value;
   if(!nm||!s||!e||hm(e)<=hm(s)||(once&&!dt)){alert('اكتب الاسم والوقت صح، ولو مرة واحدة اختار التاريخ');return}
-  D.sch.push({id:Date.now(),d:once?new Date(dt+'T12:00:00').getDay():+$('bd').value,n:nm,s,e,k:$('bk').value,...(once?{dt}:{})});put();render()};
+  const wd=once?new Date(dt+'T12:00:00').getDay():+$('bd').value;
+  const b={id:eb!=null?D.sch[eb].id:Date.now(),d:wd,n:nm,s,e,k:$('bk').value,pl:$('bp').value.trim(),dr:$('bo').value.trim(),nn:$('bt').value.trim(),...(once?{dt}:{})};
+  const c=D.sch.find((x,i)=>i!=eb&&(once?(x.dt?x.dt==dt:x.d==wd):(!x.dt&&x.d==wd))&&hm(x.s)<hm(e)&&hm(s)<hm(x.e));
+  if(c&&!confirm('بيتداخل مع '+c.n+'، تكمل؟'))return;
+  if(eb!=null)D.sch[eb]=b;else D.sch.push(b);eb=null;put();render()};
+W.edBlk=i=>{eb=i;render();if(i!=null)$('bf').scrollIntoView()};
+W.setCd=v=>{cdt=v==td()?'':v;render()};
+W.addFx=()=>{const nm=$('fn').value.trim(),a=+$('fa').value,l=$('fl').value,d=$('ft').value=='d';if(!nm||!a)return;
+  if(d&&!l){alert('اختار الديدلاين');return}
+  D.fx.push(d?{n:nm,rem:a,dl:l}:{n:nm,amt:a});put();render()};
+W.payFx=i=>{const v=+prompt('سددت كام؟');if(!v)return;D.fx[i].rem=Math.max(0,D.fx[i].rem-v);put();render()};
+W.tg=i=>{const d=td(),s=hst({i},d),a=D.hd[d]||(D.hd[d]=[]),b=D.hn[d]||(D.hn[d]=[]);[a,b].forEach(x=>{const k=x.indexOf(i);if(k>=0)x.splice(k,1)});if(s==0)a.push(i);if(s==1)b.push(i);put();render()};
 W.skBlk=(d,id)=>{const a=D.sk[d]||(D.sk[d]=[]),k=a.indexOf(id);k<0?a.push(id):a.splice(k,1);put();render()};
 W.setWo=v=>{wo=v==0?0:wo+v;render()};
-W.delBlk=i=>{D.sch.splice(i,1);put();render()};
-W.addHb=()=>{const nm=$('hn').value.trim();if(!nm)return;D.hb.push({i:Date.now(),n:nm,au:+$('ha').value});put();render()};
+W.delBlk=i=>{D.sch.splice(i,1);eb=null;put();render()};
+W.addHb=()=>{const nm=$('hn').value.trim();if(!nm)return;D.hb.push({i:Date.now(),n:nm});put();render()};
 W.dh=i=>{D.hb=D.hb.filter(h=>h.i!=i);put();render()};
-W.tg=i=>{const h=D.hb.find(x=>x.i==i),o=h.au?D.hx:D.hd,a=o[td()]||(o[td()]=[]),k=a.indexOf(i);k<0?a.push(i):a.splice(k,1);put();render()};
 W.addNt=()=>{
   const x=$('nx').value.trim(),k=$('nk').value,w=$('nw').value;if(!x)return;
   let d=w=='today'?addD(0):w=='tom'?addD(1):w=='pick'?$('nda').value:'';
@@ -255,6 +283,9 @@ setInterval(()=>{
   dueN().forEach(x=>{if(!shown.has(x.id)){shown.add(x.id);if(W.Notification&&Notification.permission=='granted')new Notification('تذكير',{body:x.x})}});
   if(tab=='home'&&!/INPUT|SELECT/.test(document.activeElement.tagName))render();
 },60000);
+if('serviceWorker' in navigator)navigator.serviceWorker.register('sw.js');
+let ip;addEventListener('beforeinstallprompt',e=>{e.preventDefault();ip=e});
+W.inst=()=>ip?ip.prompt():alert('من قايمة المتصفح اختار: إضافة إلى الشاشة الرئيسية');
 render();
 </script>
 </body>
