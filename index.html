@@ -8,34 +8,52 @@
 <style>
 :root{--bg:#0E1F1C;--c:#16302B;--t:#EAF2EF;--m:#8FA8A0;--a:#F2B134;--g:#5FB3A1;--r:#E5806B}
 *{box-sizing:border-box}
-body{margin:0 auto;max-width:480px;background:var(--bg);color:var(--t);font-family:Cairo,sans-serif;padding:16px 16px 96px}
+body{margin:0;background:var(--bg);color:var(--t);font-family:Cairo,sans-serif;padding:12px 14px 96px}
+main,header{max-width:520px;margin:0 auto}
+header{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px}
+h1{font-size:20px;margin:0}
 .c{background:var(--c);border-radius:16px;padding:14px;margin-bottom:12px}
 .m{color:var(--m);font-size:12px}
 .big{font-size:30px;font-weight:700}
-.r{display:flex;justify-content:space-between;padding:6px 0;font-size:14px}
+.r{display:flex;justify-content:space-between;gap:8px;padding:6px 0;font-size:14px}
 .bar{height:8px;background:var(--bg);border-radius:4px;margin-top:8px}
 .bar i{display:block;height:8px;border-radius:4px;background:var(--g)}
-.row2{display:flex;gap:10px}.row2>*{flex:1}
+.row2{display:flex;gap:10px}.row2>*{flex:1;min-width:0}
 label{display:block}
 input,select{width:100%;padding:11px;border-radius:12px;border:0;background:var(--c);color:var(--t);font:600 16px Cairo,sans-serif;margin:4px 0 10px}
 .c input,.c select{background:var(--bg)}
-button{width:100%;padding:13px;border:0;border-radius:14px;background:var(--a);color:#0E1F1C;font:700 16px Cairo,sans-serif}
-button:focus-visible,input:focus-visible,select:focus-visible,nav a:focus-visible{outline:2px solid var(--a);outline-offset:2px}
-nav{position:fixed;bottom:0;left:0;right:0;max-width:480px;margin:auto;display:flex;background:var(--c);padding:6px 6px calc(6px + env(safe-area-inset-bottom))}
+button{width:100%;padding:13px;border:0;border-radius:14px;background:var(--a);color:#0E1F1C;font:700 16px Cairo,sans-serif;cursor:pointer}
+button.s{width:auto;padding:8px 14px;font-size:13px;background:var(--c);color:var(--t)}
+.c button.s{background:var(--bg)}
+:focus-visible{outline:2px solid var(--a);outline-offset:2px}
+nav{position:fixed;bottom:0;left:0;right:0;max-width:520px;margin:auto;display:flex;background:var(--c);padding:6px 6px calc(6px + env(safe-area-inset-bottom))}
 nav a{flex:1;text-align:center;padding:12px 0;font-size:12px;color:var(--m);border-radius:12px;cursor:pointer}
 nav a.on{background:var(--a);color:#0E1F1C;font-weight:700}
-.del{color:var(--r);cursor:pointer}
+.del{color:var(--r);cursor:pointer;font-size:13px}
+.chip{display:inline-block;padding:8px 12px;border-radius:12px;background:var(--c);font-size:13px;margin:0 0 6px 6px;cursor:pointer}
+.chip.on{background:var(--a);color:#0E1F1C;font-weight:700}
+.dot{display:inline-block;width:10px;height:10px;border-radius:5px;margin-left:8px}
+.cols{display:flex;gap:3px}
+@media(min-width:900px){
+body{padding:20px 240px 24px 24px}
+main,header{max-width:1000px}
+.g{display:grid;grid-template-columns:repeat(2,1fr);gap:12px;align-items:start}
+.g .c{margin:0}.g .w{grid-column:1/-1}
+nav{top:0;bottom:0;left:auto;right:0;margin:0;width:210px;max-width:none;flex-direction:column;justify-content:flex-start;gap:6px;padding:24px 12px;border-radius:0}
+nav a{flex:none;text-align:right;padding:12px 14px;font-size:15px}
+.f{max-width:560px;margin:auto}
+}
 </style>
 </head>
 <body>
-<div id="app"></div>
+<header id="hd"><h1>مساعدي</h1><button class="s" onclick="go('set')">الإعدادات</button></header>
+<main id="app"></main>
 <nav id="nav"></nav>
 <script type="module">
 import {initializeApp} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
 import {getAuth,onAuthStateChanged,signInWithPopup,GoogleAuthProvider,signOut} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 import {initializeFirestore,persistentLocalCache,doc,onSnapshot,setDoc} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
-// الصق هنا إعدادات مشروعك من Firebase Console > Project settings > Your apps
 const cfg={apiKey:"AIzaSyCePnEcD05ZlDpqjjUFUsvxtliB0HszHx4",authDomain:"gdo-3lewa.firebaseapp.com",projectId:"gdo-3lewa",appId:"1:13561475550:web:28334c1f5391d6eb46ed4f"};
 
 const $=id=>document.getElementById(id);
@@ -43,27 +61,33 @@ const n=x=>Math.round(x).toLocaleString('en');
 const f=x=>n(x)+' ج';
 const row=(a,b)=>`<div class="r"><span>${a}</span><b>${b}</b></div>`;
 const sum=(L,k)=>L.reduce((a,d)=>a+(d[k]||0),0);
-const td=()=>new Date(Date.now()-new Date().getTimezoneOffset()*6e4).toISOString().slice(0,10);
-const ym=td().slice(0,7);
-const DEF={s:{price:25,goal:12000,wd:16,kol:40,fun:25,safe:15,save:20},fx:[],days:{},sp:[]};
-let D=structuredClone(DEF),U=null,ref=null,tab='home',db,auth;
+const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const addD=k=>new Date(Date.now()-new Date().getTimezoneOffset()*6e4+k*864e5).toISOString().slice(0,10);
+const td=()=>addD(0),ym=td().slice(0,7);
+const nowHM=()=>new Date().toTimeString().slice(0,5);
+const hm=t=>{const[a,b]=t.split(':');return +a+b/60};
+const DN=['أحد','اثنين','ثلاثاء','أربع','خميس','جمعة','سبت'],ORD=[1,2,3,4,5,6,0];
+const KC={work:'#B87A2E',lec:'#4A78B8',sec:'#3F8F68',study:'#7B66B5'},KN={work:'شغل',lec:'محاضرة',sec:'سكشن',study:'مذاكرة'};
+const COL=['#F2B134','#5FB3A1','#7FA6E8','#B79CE8','#8FA8A0'];
+const DEF={s:{price:25,goal:12000,wd:16,kol:40,fun:25,safe:15,save:20},fx:[],days:{},sp:[],sch:[],hb:[],hd:{},nt:[]};
+let D=structuredClone(DEF),U=null,ref=null,tab='home',db,auth,nf='الكل',nd='all',ndp='',selM=ym;
 
 if(cfg.apiKey.startsWith("YOUR")){
-  $('app').innerHTML='<div class="c" style="margin-top:20vh"><b>محتاج إعدادات Firebase</b><p class="m">افتح index.html وحط بيانات مشروعك مكان YOUR_API_KEY.</p></div>';
+  $('app').innerHTML='<div class="c"><b>محتاج إعدادات Firebase</b></div>';
 }else{
   const app=initializeApp(cfg);
   auth=getAuth(app);
   db=initializeFirestore(app,{localCache:persistentLocalCache()});
   onAuthStateChanged(auth,u=>{
     U=u;
-    if(!u){render();return}
+    if(!u){ref=null;render();return}
     ref=doc(db,'users',u.uid);
     render();
     onSnapshot(ref,s=>{
       const x=s.exists()?s.data():{};
       D={...structuredClone(DEF),...x,s:{...DEF.s,...(x.s||{})}};
       if(!/INPUT|SELECT/.test(document.activeElement.tagName))render();
-    },e=>{$('app').innerHTML='<div class="c" style="margin-top:20vh"><b>مشكلة في قاعدة البيانات</b><p class="m">'+e.code+'</p></div>'});
+    },e=>{$('app').innerHTML='<div class="c"><b>مشكلة في قاعدة البيانات</b><p class="m">'+e.code+'</p></div>'});
   });
 }
 const put=()=>setDoc(ref,D);
@@ -71,15 +95,16 @@ const put=()=>setDoc(ref,D);
 const bal=w=>sum(Object.values(D.days),w)-D.sp.filter(x=>x.w==w).reduce((a,x)=>a+x.a,0);
 const spent=w=>D.sp.filter(x=>x.w==w&&x.d.startsWith(ym)).reduce((a,x)=>a+x.a,0);
 const perDay=()=>D.fx.reduce((a,x)=>a+x.amt/D.s.wd,0);
+const mDays=m=>Object.entries(D.days).filter(([k])=>k.startsWith(m)).map(e=>e[1]);
+const dueN=()=>D.nt.filter(x=>!x.ok&&x.d&&(x.d<td()||(x.d==td()&&(!x.tm||x.tm<=nowHM()))));
 
 function calc(d){
-  const inc=d.o*D.s.price+d.t,ex=d.f+d.w+d.r,net=inc-ex;
-  const fx=Math.min(Math.max(net,0),perDay()),rest=Math.max(net-fx,0),p=D.s;
+  const inc=d.o*D.s.price+d.t,ex=d.f+d.w+d.r,net=inc-ex,p=D.s;
+  const fx=Math.min(Math.max(net,0),perDay()),rest=Math.max(net-fx,0);
   return {inc,ex,net,fx,rest,kol:rest*p.kol/100,fun:rest*p.fun/100,safe:rest*p.safe/100,save:rest*p.save/100};
 }
 function st(){
-  const m=Object.entries(D.days).filter(([k])=>k.startsWith(ym));
-  const net=m.reduce((a,[,d])=>a+d.net,0),worked=m.filter(([,d])=>d.h>0).length;
+  const M=mDays(ym),net=sum(M,'net'),worked=M.filter(d=>d.h>0).length;
   const L=Object.keys(D.days).sort().slice(-30).map(k=>D.days[k]);
   const H=sum(L,'h'),N=sum(L,'net'),O=sum(L,'o');
   const rate=H?N/H:70,perOrder=O?N/O:D.s.price;
@@ -88,81 +113,141 @@ function st(){
 }
 const read=()=>{const g=i=>+$(i).value||0;return {o:g('o'),h:g('h'),t:g('t'),f:g('f'),w:g('w'),r:g('r')}};
 
-const wc=(name,w)=>`<div class="c"><div class="m">${name}</div><div class="big" style="font-size:20px">باقي ${f(bal(w))}</div><div class="m">صرفت ${f(spent(w))} الشهر ده</div></div>`;
+function donut(L,V,mid){
+  const T=V.reduce((a,b)=>a+b,0)||1;let o=0;
+  const segs=V.map((v,i)=>{const d=v/T*314.16,s=`<circle cx="60" cy="60" r="50" fill="none" stroke="${COL[i]}" stroke-width="16" stroke-dasharray="${d} 400" stroke-dashoffset="${-o}"/>`;o+=d;return s}).join('');
+  return `<div style="display:flex;align-items:center;gap:14px"><svg width="120" height="120" viewBox="0 0 120 120" aria-hidden="true"><g transform="rotate(-90 60 60)"><circle cx="60" cy="60" r="50" fill="none" stroke="#0E1F1C" stroke-width="16"/>${segs}</g><text x="60" y="66" text-anchor="middle" fill="#EAF2EF" font-size="15" font-weight="700">${mid}</text></svg><div style="flex:1">${L.map((l,i)=>`<div class="r"><span><i class="dot" style="background:${COL[i]}"></i>${l}</span><span class="m">${f(V[i])}</span></div>`).join('')}</div></div>`;
+}
+const wc=(name,w)=>`<div class="c"><div class="m">${name}</div><div class="big" style="font-size:22px">باقي ${f(bal(w))}</div><div class="m">صرفت ${f(spent(w))} الشهر ده</div></div>`;
+const chip=(t,on,fn)=>`<a class="chip ${on?'on':''}" role="button" tabindex="0" onclick="${fn}">${t}</a>`;
+const opts=(A,sel)=>A.map(x=>`<option ${x==sel?'selected':''}>${x}</option>`).join('');
+
+function sumry(m){
+  const M=mDays(m),net=sum(M,'net'),H=sum(M,'h'),O=sum(M,'o');
+  const[y,mo]=m.split('-').map(Number),pk=mo==1?(y-1)+'-12':y+'-'+String(mo-1).padStart(2,'0'),pn=sum(mDays(pk),'net');
+  const sf=D.sp.filter(x=>x.w=='fun'&&x.d.startsWith(m)).reduce((a,x)=>a+x.a,0),af=sum(M,'fun');
+  const tips=[net>=D.s.goal?'حققت هدف الشهر':'ناقصك '+f(D.s.goal-net)+' من الهدف'];
+  if(sf>af)tips.push('الترفيه عدّى اللي اتحجز له بـ '+f(sf-af)+'، قلّل المصروف أو النسبة');
+  if(pn)tips.push((net>=pn?'أحسن':'أقل')+' من الشهر اللي فات بـ '+Math.abs(Math.round((net-pn)/pn*100))+'%');
+  const months=[...new Set(Object.keys(D.days).map(k=>k.slice(0,7)).concat(ym))].sort().reverse();
+  return `<div class="c w"><div style="display:flex;justify-content:space-between;align-items:center"><div class="m">ملخص الشهر</div><select style="width:auto;margin:0" onchange="setM(this.value)">${opts(months,m)}</select></div>
+  ${row('صافي الشهر',f(net)+' من '+f(D.s.goal))}${row('أيام شغل',M.filter(d=>d.h>0).length)}${row('ساعات',H)}${row('أوردر في الساعة',H?(O/H).toFixed(1):'-')}
+  ${donut(['الثابتات','الكلية','الترفيه','الأمان','الادخار'],['fx','kol','fun','safe','save'].map(k=>sum(M,k)),f(net))}
+  ${tips.map(t=>`<div style="padding:4px 0;font-size:14px">${t}</div>`).join('')}</div>`;
+}
 
 const V={
 home(){
-  const s=st(),t=D.days[td()],g=Math.min(100,s.net/D.s.goal*100);
-  return `<div class="c"><div class="m">النهارده</div><div class="big">${t?f(t.net)+' صافي':'لسه ما قفلتش اليوم'}</div>
-  <div class="m">${t?t.o+' أوردر · '+t.h+' ساعة':'المطلوب النهارده '+f(s.need)}</div></div>
+  const s=st(),t=D.days[td()],g=Math.min(100,s.net/D.s.goal*100),dd=(D.hd[td()]||[]).length,hb=D.hb.length;
+  const today=D.sch.filter(x=>x.d==new Date().getDay()).sort((a,b)=>a.s>b.s?1:-1);
+  return `<div class="g">${dueN().map(x=>`<div class="c w" style="border:1px solid var(--r)"><div class="m">تذكير</div>${esc(x.x)}</div>`).join('')}
+  <div class="c"><div class="m">النهارده</div><div class="big">${t?f(t.net)+' صافي':'لسه ما قفلتش اليوم'}</div><div class="m">${t?t.o+' أوردر · '+t.h+' ساعة':'المطلوب النهارده '+f(s.need)}</div></div>
   <div class="c"><div class="m">هدف الشهر ${f(D.s.goal)}</div><div class="big">${f(s.net)}</div><div class="bar"><i style="width:${g}%"></i></div></div>
-  <div class="row2">${wc('الكلية','kol')}${wc('الترفيه','fun')}</div>
-  <div class="c"><div class="m">محجوز يومياً للثابتات</div><div class="big">${f(perDay())}</div></div>
-  <button onclick="go('close')">${t?'عدّل يومك':'اقفل يومك'}</button>`;
+  ${wc('الكلية','kol')}${wc('الترفيه','fun')}
+  <div class="c"><div class="m">جدول النهارده</div>${today.map(x=>row(esc(x.n),x.s+' - '+x.e)).join('')||'<div class="m">فاضي</div>'}</div>
+  <div class="c"><div class="m">العادات</div><div class="big" style="font-size:22px">${dd} من ${hb}</div><div class="bar"><i style="width:${hb?dd/hb*100:0}%"></i></div><div class="m" style="margin-top:8px">محجوز للثابتات يومياً ${f(perDay())}</div></div>
+  <button class="w" onclick="go('close')">${t?'عدّل يومك':'اقفل يومك'}</button></div>`;
 },
 close(){
   const d=D.days[td()]||{};
   const i=(id,l)=>`<label class="m">${l}<input id="${id}" type="number" inputmode="decimal" value="${d[id]??''}" oninput="pv()"></label>`;
-  return `<div class="row2">${i('o','عدد الأوردرات')}${i('h','ساعات الشغل')}</div>${i('t','بونص وتيبس (ج)')}
+  return `<div class="f"><div class="row2">${i('o','عدد الأوردرات')}${i('h','ساعات الشغل')}</div>${i('t','بونص وتيبس (ج)')}
   <div class="m">مصاريف الشغل</div><div class="row2">${i('f','أكل')}${i('w','شرب')}${i('r','تصليح')}</div>
-  <div class="c" id="pr"></div><button onclick="saveDay()">اقفل اليوم</button>`;
+  <div class="c" id="pr"></div><button onclick="saveDay()">اقفل اليوم</button></div>`;
 },
 ord(){
   const s=st(),last=Object.keys(D.days).sort().slice(-7).reverse();
-  return `<div class="c"><div class="m">هدف الشهر ${f(D.s.goal)} · موزع على ${D.s.wd} يوم شغل</div><div class="big">${f(s.net)}</div>
-  <div class="bar"><i style="width:${Math.min(100,s.net/D.s.goal*100)}%"></i></div></div>
-  <div class="c"><div class="m">المطلوب منك</div>${row('أيام شغل باقية',s.left)}${row('المطلوب في اليوم',f(s.need))}
-  ${row('ساعات في اليوم',s.hrs.toFixed(1))}${row('أوردرات في اليوم',Math.ceil(s.ord))}
-  ${row('أوردر في الساعة (متوسطك)',s.opH.toFixed(1))}${row('دخل الساعة',f(s.rate))}</div>
-  <div class="c"><div class="m">آخر الأيام</div>${last.map(k=>row(k.slice(5),f(D.days[k].net))).join('')||'<div class="m">لسه مفيش أيام مقفولة</div>'}</div>`;
+  return `<div class="g"><div class="c"><div class="m">هدف الشهر ${f(D.s.goal)} · موزع على ${D.s.wd} يوم شغل</div><div class="big">${f(s.net)}</div><div class="bar"><i style="width:${Math.min(100,s.net/D.s.goal*100)}%"></i></div></div>
+  <div class="c"><div class="m">المطلوب منك</div>${row('أيام شغل باقية',s.left)}${row('المطلوب في اليوم',f(s.need))}${row('ساعات في اليوم',s.hrs.toFixed(1))}${row('أوردرات في اليوم',Math.ceil(s.ord))}${row('أوردر في الساعة (متوسطك)',s.opH.toFixed(1))}${row('دخل الساعة',f(s.rate))}</div>
+  <div class="c w"><div class="m">آخر الأيام</div>${last.map(k=>row(k.slice(5),f(D.days[k].net))).join('')||'<div class="m">لسه مفيش أيام مقفولة</div>'}</div>${sumry(selM)}</div>`;
 },
 money(){
-  const L={kol:'الكلية',fun:'الترفيه',safe:'الأمان',save:'الادخار'};
-  return `<div class="c"><div class="m">الأرصدة</div>${Object.keys(L).map(w=>row(L[w],f(bal(w)))).join('')}</div>
-  <div class="c"><div class="m">سجّل مصروف</div><select id="sw"><option value="kol">الكلية</option><option value="fun">الترفيه</option></select>
-  <input id="sa" type="number" inputmode="decimal" placeholder="المبلغ"><input id="sn" placeholder="على إيه"><button onclick="addSp()">سجّل</button></div>
-  <div class="c"><div class="m">آخر المصاريف</div>${D.sp.slice(-5).reverse().map(x=>row(x.n||L[x.w],f(x.a))).join('')||'<div class="m">لسه مفيش</div>'}</div>
-  <div class="c"><div class="m">الثابتات والالتزامات (شهرياً)</div>
-  ${D.fx.map((x,i)=>`<div class="r"><span>${x.n}: ${f(x.amt)} (${f(x.amt/D.s.wd)} يومياً)</span><a class="del" onclick="delFx(${i})">حذف</a></div>`).join('')}
-  <input id="fn" placeholder="الاسم (قسط، دين، اشتراك)"><input id="fa" type="number" inputmode="decimal" placeholder="المبلغ الشهري"><button onclick="addFx()">ضيف</button></div>`;
+  const L={kol:'الكلية',fun:'الترفيه',safe:'الأمان',save:'الادخار'},M=mDays(ym);
+  return `<div class="g"><div class="c w"><div class="m">توزيع فلوس الشهر</div>${donut(['الثابتات','الكلية','الترفيه','الأمان','الادخار'],['fx','kol','fun','safe','save'].map(k=>sum(M,k)),f(sum(M,'net')))}</div>
+  <div class="c"><div class="m">الأرصدة</div>${Object.keys(L).map(w=>row(L[w],f(bal(w)))).join('')}</div>
+  <div class="c"><div class="m">سجّل مصروف</div><select id="sw"><option value="kol">الكلية</option><option value="fun">الترفيه</option></select><input id="sa" type="number" inputmode="decimal" placeholder="المبلغ"><input id="sn" placeholder="على إيه"><button onclick="addSp()">سجّل</button></div>
+  <div class="c"><div class="m">آخر المصاريف</div>${D.sp.slice(-5).reverse().map(x=>row(esc(x.n||L[x.w]),f(x.a))).join('')||'<div class="m">لسه مفيش</div>'}</div>
+  <div class="c"><div class="m">الثابتات والالتزامات (شهرياً)</div>${D.fx.map((x,i)=>`<div class="r"><span>${esc(x.n)}: ${f(x.amt)} (${f(x.amt/D.s.wd)} يومياً)</span><a class="del" onclick="delFx(${i})">حذف</a></div>`).join('')}<input id="fn" placeholder="الاسم (قسط، دين، اشتراك)"><input id="fa" type="number" inputmode="decimal" placeholder="المبلغ الشهري"><button onclick="addFx()">ضيف</button></div></div>`;
+},
+sch(){
+  const hs=7,he=24,H=26,td0=td();
+  const cols=ORD.map(d=>`<div style="flex:1;min-width:0"><div class="m" style="text-align:center">${DN[d]}</div><div style="position:relative;height:${(he-hs)*H}px;background:var(--c);border-radius:6px">${D.sch.filter(x=>x.d==d).map(x=>{const a=Math.max(hm(x.s),hs),e=Math.min(hm(x.e),he);return `<div style="position:absolute;left:1px;right:1px;top:${(a-hs)*H}px;height:${Math.max((e-a)*H-2,10)}px;background:${KC[x.k]};border-radius:5px;font-size:10px;padding:2px;overflow:hidden;line-height:1.2">${esc(x.n)}</div>`}).join('')}</div></div>`).join('');
+  const list=D.sch.map((x,i)=>({...x,i})).sort((a,b)=>ORD.indexOf(a.d)-ORD.indexOf(b.d)||(a.s>b.s?1:-1));
+  const dn=(D.hd[td0]||[]);
+  return `<div class="g"><div class="c w"><div class="cols">${cols}</div><div class="m" style="margin-top:8px">${Object.keys(KN).map(k=>`<span class="dot" style="background:${KC[k]}"></span>${KN[k]}`).join(' ')}</div></div>
+  <div class="c"><div class="m">ضيف بلوك</div><select id="bd">${ORD.map(d=>`<option value="${d}">${DN[d]}</option>`).join('')}</select><input id="bn" placeholder="الاسم (Math 3، طلبات)"><div class="row2"><label class="m">من<input id="bs" type="time" value="09:00"></label><label class="m">إلى<input id="be" type="time" value="12:00"></label></div><select id="bk">${Object.keys(KN).map(k=>`<option value="${k}">${KN[k]}</option>`).join('')}</select><button onclick="addBlk()">ضيف</button></div>
+  <div class="c"><div class="m">البلوكات</div>${list.map(x=>`<div class="r"><span>${DN[x.d]} · ${esc(x.n)} · ${x.s}-${x.e}</span><a class="del" onclick="delBlk(${x.i})">حذف</a></div>`).join('')||'<div class="m">لسه مفيش</div>'}</div>
+  <div class="c w"><div class="m">عادات النهارده</div>${D.hb.map(h=>`<div class="r"><a role="button" tabindex="0" style="cursor:pointer;${dn.includes(h.i)?'color:var(--g)':''}" onclick="tg(${h.i})">${dn.includes(h.i)?'✓':'○'} ${esc(h.n)}</a><a class="del" onclick="dh(${h.i})">حذف</a></div>`).join('')}<input id="hn" placeholder="عادة جديدة (مذاكرة ساعة)"><button onclick="addHb()">ضيف عادة</button></div></div>`;
+},
+nt(){
+  const K=['عادي','وصفة','تمرين','عاجل'];
+  let L=D.nt.map((x,i)=>({...x,i}));
+  if(nf!='الكل')L=L.filter(x=>x.k==nf);
+  if(nd=='today')L=L.filter(x=>x.d==td());
+  if(nd=='tom')L=L.filter(x=>x.d==addD(1));
+  if(nd=='pick')L=L.filter(x=>x.d==ndp);
+  L.sort((a,b)=>(a.ok?1:0)-(b.ok?1:0)||((a.d||'9')>(b.d||'9')?1:-1));
+  return `<div class="g"><div class="c w"><div class="m">النوع</div>${['الكل',...K].map(k=>chip(k,nf==k,`setNf('${k}')`)).join('')}
+  <div class="m">اليوم</div>${[['all','الكل'],['today','النهارده'],['tom','بكرة'],['pick','يوم معين']].map(([k,v])=>chip(v,nd==k,`setNd('${k}')`)).join('')}${nd=='pick'?`<input type="date" value="${ndp}" onchange="setNp(this.value)">`:''}</div>
+  <div class="c w"><div class="m">نوتة جديدة</div><input id="nx" placeholder="اكتب النوتة"><div class="row2"><select id="nk">${opts(K,'عادي')}</select><select id="nw"><option value="">بدون تاريخ</option><option value="today">النهارده</option><option value="tom">بكرة</option><option value="pick">يوم معين</option></select></div><div class="row2"><input id="nda" type="date"><input id="ntm" type="time"></div><div class="m">النوتة العاجلة من غير تاريخ بتتحط بكرة لوحدها</div><button onclick="addNt()">احفظ</button><p></p><button class="s" onclick="window.Notification&&Notification.requestPermission()">فعّل إشعارات المتصفح</button></div>
+  ${L.map(x=>`<div class="c"><div style="${x.ok?'text-decoration:line-through;opacity:.6':''}">${esc(x.x)}</div><div class="m" style="${!x.ok&&x.d&&x.d<td()?'color:var(--r)':''}">${x.k} · ${x.d||'بدون تاريخ'}${x.tm?' · '+x.tm:''}</div><div class="row2" style="margin-top:8px"><button class="s" onclick="okNt(${x.i})">${x.ok?'رجّعها':'خلصت'}</button><button class="s" onclick="delNt(${x.i})">امسح</button></div></div>`).join('')||'<div class="c w m">مفيش نوتس بالفلتر ده</div>'}</div>`;
 },
 set(){
   const s=D.s,i=(id,l)=>`<label class="m">${l}<input id="${id}" type="number" inputmode="decimal" value="${s[id]}"></label>`;
-  return `${i('price','سعر الأوردر (ج)')}${i('goal','هدف الشهر (ج)')}${i('wd','عدد أيام الشغل في الشهر')}
+  return `<div class="f">${i('price','سعر الأوردر (ج)')}${i('goal','هدف الشهر (ج)')}${i('wd','عدد أيام الشغل في الشهر')}
   <div class="m">نسب توزيع الباقي (المجموع 100)</div><div class="row2">${i('kol','كلية')}${i('fun','ترفيه')}</div><div class="row2">${i('safe','أمان')}${i('save','ادخار')}</div>
-  <button onclick="saveSet()">احفظ</button><p></p><button onclick="out()" style="background:var(--c);color:var(--t)">خروج</button>`;
+  <button onclick="saveSet()">احفظ</button><p></p><button onclick="out()" style="background:var(--c);color:var(--t)">خروج</button></div>`;
 }};
 
+const TABS=[['home','الرئيسية'],['close','قفل اليوم'],['ord','الطلبات'],['money','المال'],['sch','الجدول'],['nt','النوتس']];
 function render(){
+  $('hd').style.display=ref?'':'none';
   if(!ref||!U){
-    if(cfg.apiKey.startsWith("YOUR"))return;
     $('nav').innerHTML='';
-    $('app').innerHTML='<div class="c" style="margin-top:28vh;text-align:center"><div class="big">مساعدي</div><p class="m">شغلك وفلوسك في مكان واحد</p><button onclick="login()">دخول بحساب جوجل</button></div>';
+    $('app').innerHTML='<div class="c" style="margin-top:25vh;text-align:center"><div class="big">مساعدي</div><p class="m">شغلك وفلوسك ومواعيدك في مكان واحد</p><button onclick="login()">دخول بحساب جوجل</button></div>';
     return;
   }
-  $('nav').innerHTML=[['home','الرئيسية'],['close','قفل اليوم'],['ord','الطلبات'],['money','المال'],['set','الإعدادات']]
-    .map(([k,v])=>`<a role="button" tabindex="0" class="${k==tab?'on':''}" onclick="go('${k}')">${v}</a>`).join('');
+  $('nav').innerHTML=TABS.map(([k,v])=>`<a role="button" tabindex="0" class="${k==tab?'on':''}" onclick="go('${k}')">${v}</a>`).join('');
   $('app').innerHTML=V[tab]();
   if(tab=='close')pv();
 }
-window.go=t=>{tab=t;render()};
-window.login=async()=>{try{await signInWithPopup(auth,new GoogleAuthProvider())}catch(e){alert('خطأ في الدخول: '+e.code)}};
-window.out=()=>{ref=null;signOut(auth)};
-window.pv=()=>{
+const W=window;
+W.go=t=>{tab=t;render();scrollTo(0,0)};
+W.setNf=v=>{nf=v;render()};W.setNd=v=>{nd=v;render()};W.setNp=v=>{ndp=v;render()};W.setM=v=>{selM=v;render()};
+W.login=async()=>{try{await signInWithPopup(auth,new GoogleAuthProvider())}catch(e){alert('خطأ في الدخول: '+e.code)}};
+W.out=()=>{signOut(auth)};
+W.pv=()=>{
   const x=calc(read());
-  $('pr').innerHTML=row('الدخل',f(x.inc))+row('مصاريف الشغل','- '+f(x.ex))+row('الصافي',f(x.net))+row('الثابتات','- '+f(x.fx))
-    +row('الباقي للتوزيع',f(x.rest))+row('الكلية',f(x.kol))+row('الترفيه',f(x.fun))+row('الأمان',f(x.safe))+row('الادخار',f(x.save));
+  $('pr').innerHTML=row('الدخل',f(x.inc))+row('مصاريف الشغل','- '+f(x.ex))+row('الصافي',f(x.net))+row('الثابتات','- '+f(x.fx))+row('الباقي للتوزيع',f(x.rest))+row('الكلية',f(x.kol))+row('الترفيه',f(x.fun))+row('الأمان',f(x.safe))+row('الادخار',f(x.save));
 };
-window.saveDay=()=>{const v=read();D.days[td()]={...v,...calc(v)};put();go('home')};
-window.addSp=()=>{const a=+$('sa').value;if(!a)return;D.sp.push({w:$('sw').value,a,n:$('sn').value,d:td()});put();render()};
-window.addFx=()=>{const a=+$('fa').value,nm=$('fn').value.trim();if(!a||!nm)return;D.fx.push({n:nm,amt:a});put();render()};
-window.delFx=i=>{D.fx.splice(i,1);put();render()};
-window.saveSet=()=>{
-  const k=['price','goal','wd','kol','fun','safe','save'],v={};
-  k.forEach(x=>v[x]=+$(x).value||0);
+W.saveDay=()=>{const v=read();D.days[td()]={...v,...calc(v)};put();go('home')};
+W.addSp=()=>{const a=+$('sa').value;if(!a)return;D.sp.push({w:$('sw').value,a,n:$('sn').value,d:td()});put();render()};
+W.addFx=()=>{const a=+$('fa').value,nm=$('fn').value.trim();if(!a||!nm)return;D.fx.push({n:nm,amt:a});put();render()};
+W.delFx=i=>{D.fx.splice(i,1);put();render()};
+W.addBlk=()=>{const nm=$('bn').value.trim(),s=$('bs').value,e=$('be').value;if(!nm||!s||!e||hm(e)<=hm(s)){alert('اكتب الاسم وتأكد إن وقت النهاية بعد البداية');return}D.sch.push({d:+$('bd').value,n:nm,s,e,k:$('bk').value});put();render()};
+W.delBlk=i=>{D.sch.splice(i,1);put();render()};
+W.addHb=()=>{const nm=$('hn').value.trim();if(!nm)return;D.hb.push({i:Date.now(),n:nm});put();render()};
+W.dh=i=>{D.hb=D.hb.filter(h=>h.i!=i);put();render()};
+W.tg=i=>{const a=D.hd[td()]||(D.hd[td()]=[]),k=a.indexOf(i);k<0?a.push(i):a.splice(k,1);put();render()};
+W.addNt=()=>{
+  const x=$('nx').value.trim(),k=$('nk').value,w=$('nw').value;if(!x)return;
+  let d=w=='today'?addD(0):w=='tom'?addD(1):w=='pick'?$('nda').value:'';
+  if(!d&&k=='عاجل')d=addD(1);
+  D.nt.push({id:Date.now(),x,k,d,tm:$('ntm').value,ok:0});put();render();
+};
+W.okNt=i=>{D.nt[i].ok=D.nt[i].ok?0:1;put();render()};
+W.delNt=i=>{D.nt.splice(i,1);put();render()};
+W.saveSet=()=>{
+  const v={};['price','goal','wd','kol','fun','safe','save'].forEach(x=>v[x]=+$(x).value||0);
   if(v.kol+v.fun+v.safe+v.save!=100){alert('مجموع النسب لازم يبقى 100');return}
   v.wd=Math.max(v.wd,1);D.s=v;put();go('home');
 };
+const shown=new Set();
+setInterval(()=>{
+  if(!ref)return;
+  dueN().forEach(x=>{if(!shown.has(x.id)){shown.add(x.id);if(W.Notification&&Notification.permission=='granted')new Notification('تذكير',{body:x.x})}});
+  if(tab=='home'&&!/INPUT|SELECT/.test(document.activeElement.tagName))render();
+},60000);
 render();
 </script>
 </body>
