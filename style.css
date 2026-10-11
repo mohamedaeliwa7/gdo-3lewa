@@ -83,3 +83,7 @@ header h1 svg{transition:transform .4s}header h1:hover svg{transform:rotate(-12d
 nav a.dx{display:none}nav a.mm{display:block}
 @media(min-width:900px){nav a.dx{display:block}nav a.mm{display:none}}
 @media(prefers-reduced-motion:reduce){main.an>*,main.an .g>*,.bar i,.toast{animation:none!important}}
+
+.chk{display:flex;align-items:center;gap:8px;background:var(--bg);border:1px solid var(--line);border-radius:12px;padding:10px 12px;cursor:pointer;transition:border-color .2s}
+.chk input{width:auto;min-height:0;margin:0}
+.chk:has(input:checked){border-color:var(--a)}
