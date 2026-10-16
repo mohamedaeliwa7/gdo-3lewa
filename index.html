@@ -36,7 +36,7 @@ const hm=t=>{const[a,b]=t.split(':');return +a+b/60};
 const DN=['أحد','اثنين','ثلاثاء','أربع','خميس','جمعة','سبت'],ORD=[1,2,3,4,5,6,0];
 const KC={work:'#B87A2E',lec:'#4A78B8',sec:'#3F8F68',study:'#7B66B5',fun:'#B8587F'},KN={work:'شغل',lec:'محاضرة',sec:'سكشن',study:'مذاكرة',fun:'ترفيه'};
 const COL=['#F2B134','#5FB3A1','#7FA6E8','#B79CE8','#8FA8A0'];
-const DEF={s:{price:25,goal:12000,wd:16,kol:40,fun:25,safe:15,save:20},fx:[],days:{},sp:[],sch:[],hb:[],hd:{},hn:{},sk:{},nt:[],wl:{f:0,sn:[],po:[]},nu:{bud:2000,me:{w:0,h:0,a:0,sx:'m',act:'high',goal:'m'},tg:{k:2500,p:150,c:300,f:70},lib:[],log:[],gr:[]},gy:{days:0,plan:[],log:[]}};
+const DEF={s:{price:25,oph:2.8,goal:12000,wd:16,kol:40,fun:25,safe:15,save:20},fx:[],days:{},sp:[],sch:[],hb:[],hd:{},hn:{},sk:{},nt:[],wl:{f:0,sn:[],po:[]},nu:{bud:2000,me:{w:0,h:0,a:0,sx:'m',act:'high',goal:'m'},tg:{k:2500,p:150,c:300,f:70},lib:[],log:[],gr:[]},gy:{days:0,plan:[],log:[]}};
 let D=structuredClone(DEF),U=null,ref=null,tab='home',db,auth,nf='الكل',nd='all',ndp='',selM=ym,wo=0,eb=null,cdt='',gs=0,ld=0;
 
 if(cfg.apiKey.startsWith("YOUR")){
@@ -78,8 +78,11 @@ const fxd=x=>x.dl?x.rem/Math.max(1,Math.round((new Date(x.dl)-new Date(td()))/86
 const fxRow=(x,i)=>{const dd=x.dl?dlv(x):0,hot=x.dl&&x.rem>0&&dd<=7,done=x.dl&&x.rem<=0;
   const meta=x.dl?(done?'اتسدد بالكامل':`باقي ${f(x.rem)}${x.tot?' من '+f(x.tot):''} · لحد ${fdw(x.dl)} · ${Math.max(dd,0)} يوم`):`${f(x.amt)} شهرياً`;
   return `<div class="it${hot?' hot':''}"><div class="it-h"><b>${esc(x.n)}</b><b class="amt">${done?'✓':f(fxd(x))+'<small> يومياً</small>'}</b></div><div class="m">${meta}</div>${x.tot&&!done?`<div class="bar"><i style="width:${Math.min(100,(1-x.rem/x.tot)*100)}%"></i></div>`:''}<div class="acts">${x.dl&&!done?`<button class="ib ok" onclick="payFx(${i})">سدّدت</button>`:''}<button class="ib d" onclick="delFx(${i})">حذف</button></div></div>`};
-const fxSum=()=>{const p=perDay(),t=D.s.goal/D.s.wd,sh=t?p/t*100:0;
-  return `<div class="sum"><div><div class="m">المحجوز يومياً للثابتات</div><div class="big">${f(p)}</div></div><div class="m" style="flex:1;min-width:180px">أقل مبلغ تكسبه في كل يوم شغل قبل ما أي فلوس توصل للكلية أو الترفيه. ده ${Math.round(sh)}% من هدفك اليومي (${f(t)}).</div></div><div class="bar"><i style="width:${Math.min(100,sh)}%;${sh>100?'background:var(--r)':''}"></i></div>`};
+const fxSum=()=>{const p=perDay(),t=D.s.goal/D.s.wd,sh=t?p/t*100:0,rem=D.fx.reduce((a,x)=>a+(x.dl?x.rem:0),0),mo=D.fx.reduce((a,x)=>a+(x.dl?0:x.amt),0);
+  const ln=x=>x.dl?`${esc(x.n)}: ${f(x.rem)} ÷ ${Math.max(1,Math.round(dlv(x)/30*D.s.wd))} يوم شغل = ${f(fxd(x))}`:`${esc(x.n)}: ${f(x.amt)} ÷ ${D.s.wd} يوم شغل = ${f(fxd(x))}`;
+  return `<div class="sum"><div><div class="m">إجمالي اللي عليك</div><div class="big">${f(rem+mo)}</div><div class="m">ديون بديدلاين ${f(rem)} · التزامات شهرية ${f(mo)}</div></div></div>
+  <div class="sum"><div><div class="m">المحجوز يومياً للثابتات</div><div class="big">${f(p)}</div><div class="m">حوالي ${f(p*D.s.wd)} في الشهر لو اشتغلت ${D.s.wd} يوم</div></div><div class="m" style="flex:1;min-width:180px">أقل مبلغ تكسبه في كل يوم شغل قبل ما أي فلوس توصل للكلية أو الترفيه. ده ${Math.round(sh)}% من هدفك اليومي (${f(t)}).</div></div><div class="bar"><i style="width:${Math.min(100,sh)}%;${sh>100?'background:var(--r)':''}"></i></div>
+  <details><summary style="cursor:pointer;color:var(--a);font-size:13px;margin:10px 0 4px">إزاي اتحسب؟</summary>${D.fx.filter(x=>!x.dl||x.rem>0).map(x=>`<div class="m" style="padding:3px 0">${ln(x)}</div>`).join('')||'<div class="m">لسه مفيش التزامات</div>'}<div class="m" style="padding:3px 0">الثابت الشهري بيتقسم على أيام الشغل في الشهر (${D.s.wd} من الإعدادات). والدين بديدلاين بيتقسم على أيام الشغل اللي فاضلة لحد الديدلاين، وكل ما الديدلاين يقرب الرقم بيكبر. مجموعهم هو المحجوز يومياً.</div></details>`};
 const fxSec=(t,L)=>L.length?`<div class="sec">${t}</div>${L.map(o=>fxRow(o.x,o.i)).join('')}`:'';
 const hbRow=h=>{const s=hst(h,td());return `<button class="hb s${s}" onclick="tg(${h.i})"><span class="ck">${['','✓','✗'][s]}</span><span class="hn">${esc(h.n)}</span><span class="st">سلسلة ${streak(h)} · ${pct(h)}%</span></button>`};
 const dt=s=>new Date(s+'T12:00:00'),dstr=d=>new Date(d.getTime()-d.getTimezoneOffset()*6e4).toISOString().slice(0,10);
@@ -130,11 +133,9 @@ function calc(d){
 }
 function st(){
   const M=mDays(ym),net=sum(M,'net'),worked=M.filter(d=>d.h>0).length;
-  const L=Object.keys(D.days).sort().slice(-30).map(k=>D.days[k]);
-  const H=sum(L,'h'),N=sum(L,'net'),O=sum(L,'o');
-  const rate=H?N/H:70,perOrder=O?N/O:D.s.price;
+  const rate=D.s.oph*D.s.price||70;
   const left=Math.max(D.s.wd-worked,1),need=Math.max(D.s.goal-net,0)/left;
-  return {net,left,need,rate,opH:H?O/H:2.8,hrs:need/rate,ord:need/perOrder};
+  return {net,left,need,rate,hrs:need/rate,ord:need/D.s.price};
 }
 const read=()=>{const g=i=>+$(i).value||0;return {o:g('o'),h:g('h'),t:g('t'),f:g('f'),w:g('w'),r:g('r')}};
 
@@ -156,7 +157,7 @@ function sumry(m){
   if(pn)tips.push((net>=pn?'أحسن':'أقل')+' من الشهر اللي فات بـ '+Math.abs(Math.round((net-pn)/pn*100))+'%');
   const months=[...new Set(Object.keys(D.days).map(k=>k.slice(0,7)).concat(ym))].sort().reverse();
   return `<div class="c w"><div style="display:flex;justify-content:space-between;align-items:center"><div class="m">ملخص الشهر</div><select style="width:auto;margin:0" onchange="setM(this.value)">${opts(months,m)}</select></div>
-  ${row('صافي الشهر',f(net)+' من '+f(D.s.goal))}${row('أيام شغل',M.filter(d=>d.h>0).length)}${row('ساعات',H)}${row('أوردر في الساعة',H?(O/H).toFixed(1):'-')}
+  ${row('صافي الشهر',f(net)+' من '+f(D.s.goal))}${row('أيام شغل',M.filter(d=>d.h>0).length)}${row('ساعات',H)}
   ${donut(['الثابتات','الكلية','الترفيه','الأمان','الادخار'],['fx','kol','fun','safe','save'].map(k=>sum(M,k)),f(net))}
   ${tips.map(t=>`<div style="padding:4px 0;font-size:14px">${t}</div>`).join('')}</div>`;
 }
@@ -184,7 +185,7 @@ close(){
 ord(){
   const s=st(),last=Object.keys(D.days).sort().slice(-7).reverse();
   return `<div class="g"><div class="c"><div class="m">هدف الشهر ${f(D.s.goal)} · موزع على ${D.s.wd} يوم شغل</div><div class="big">${f(s.net)}</div><div class="bar"><i style="width:${Math.min(100,s.net/D.s.goal*100)}%"></i></div></div>
-  <div class="c"><div class="m">المطلوب منك</div>${row('أيام شغل باقية',s.left)}${row('المطلوب في اليوم',f(s.need))}${row('ساعات في اليوم',s.hrs.toFixed(1))}${row('أوردرات في اليوم',Math.ceil(s.ord))}${row('أوردر في الساعة (متوسطك)',s.opH.toFixed(1))}${row('دخل الساعة',f(s.rate))}</div>
+  <div class="c"><div class="m">المطلوب منك</div>${row('أيام شغل باقية',s.left)}${row('المطلوب في اليوم',f(s.need))}${row('ساعات في اليوم',s.hrs.toFixed(1))}${row('أوردرات في اليوم',Math.ceil(s.ord))}<div class="r"><span>أوردر في الساعة (انت اللي بتحطها)</span><input id="oph" type="number" step="0.1" inputmode="decimal" value="${D.s.oph||''}" onchange="saveOph(this.value)" aria-label="أوردر في الساعة" style="width:90px;margin:0;min-height:36px"></div>${row('دخل الساعة',f(s.rate))}</div>
   <div class="c w"><div class="m">آخر الأيام</div>${last.map(k=>row(fdw(k),f(D.days[k].net))).join('')||'<div class="m">لسه مفيش أيام مقفولة</div>'}</div>${sumry(selM)}</div>`;
 },
 money(){
@@ -315,7 +316,7 @@ W.delNt=i=>{D.nt.splice(i,1);put();render()};
 W.saveSet=()=>{
   const v={};['price','goal','wd','kol','fun','safe','save'].forEach(x=>v[x]=+$(x).value||0);
   if(v.kol+v.fun+v.safe+v.save!=100){alert('مجموع النسب لازم يبقى 100');return}
-  v.wd=Math.max(v.wd,1);D.s=v;put();go('home');
+  v.wd=Math.max(v.wd,1);D.s={...D.s,...v};put();go('home');
 };
 W.addSn=()=>{const w=$('ww').value,c=$('wc').value;if(w==='')return;D.wl.sn.push({d:td(),w:+w,c:c===''?null:+c});put();render()};
 W.saveF=()=>{D.wl.f=+$('wf').value||0;put();render()};
@@ -339,6 +340,7 @@ W.gAdd=()=>{const n=$('g_e').value.trim(),p=D.gy.plan.find(x=>x.id==$('g_d').val
 W.gDel=(id,i)=>{D.gy.plan.find(p=>p.id==id).ex.splice(i,1);put();render()};
 W.gReset=()=>{if(confirm('هيتمسح التوزيع الحالي والسجل هيفضل. تكمل؟')){D.gy.days=0;D.gy.plan=[];put();render()}};
 W.addSet=id=>{const w=+$('gw'+id).value,r=+$('gr'+id).value;if(!r)return;const pr=gPR(id);D.gy.log.push({d:td(),ex:id,w,r});if(pr&&(w>pr.w||(w==pr.w&&r>pr.r)))toast('رقم قياسي جديد!');put();render()};
+W.saveOph=v=>{D.s.oph=+v||0;put();render()};
 const shown=new Set();
 setInterval(()=>{
   if(!ref)return;
