@@ -87,3 +87,9 @@ nav a.dx{display:none}nav a.mm{display:block}
 .chk{display:flex;align-items:center;gap:8px;background:var(--bg);border:1px solid var(--line);border-radius:12px;padding:10px 12px;cursor:pointer;transition:border-color .2s}
 .chk input{width:auto;min-height:0;margin:0}
 .chk:has(input:checked){border-color:var(--a)}
+
+.hx{border-top:1px solid var(--line);padding:8px 0}
+.hx summary{cursor:pointer;font-weight:600;list-style:none;display:flex;align-items:center;gap:8px}
+.hx summary::-webkit-details-marker{display:none}
+.hx summary::before{content:'+';color:var(--a);font-weight:700;width:14px}
+.hx[open] summary::before{content:'\2212'}
